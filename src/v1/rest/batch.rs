@@ -5,7 +5,7 @@
 
 use alloc::{collections::BTreeMap, format, string::String, vec::Vec};
 
-use base64::{Engine, engine::general_purpose::STANDARD};
+use base64_codec::codec::Base64Codec;
 use io_http::rfc6750::bearer::HttpAuthBearer;
 use log::{debug, trace};
 use serde::{
@@ -87,6 +87,9 @@ impl MsgraphBatchResponse {
     /// holding base64, or turns any other status into
     /// [`MsgraphSendError::Api`]. A missing body reads as empty.
     ///
+    /// Line breaks, blanks and missing padding are accepted, any other byte
+    /// outside the alphabet fails with [`MsgraphSendError::ParseResponse`].
+    ///
     /// Graph encodes that way an inner body that is not JSON, such as
     /// the MIME message of a `$value` request. The documentation only
     /// shows JSON bodies, the encoding is community-observed:
@@ -96,9 +99,14 @@ impl MsgraphBatchResponse {
             return Ok(Vec::new());
         };
 
-        STANDARD
-            .decode(encoded)
-            .map_err(|err| MsgraphSendError::ParseResponse(serde_json::Error::custom(err)))
+        let mut decoded = Vec::new();
+
+        if !Base64Codec::default().decode_vec(encoded.as_bytes(), &mut decoded) {
+            let err = serde_json::Error::custom("Graph batch body is not base64");
+            return Err(MsgraphSendError::ParseResponse(err));
+        }
+
+        Ok(decoded)
     }
 
     /// Returns the delay of the `Retry-After` header in seconds, `None`

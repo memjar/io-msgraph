@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Bumped io-http to 0.6, ical-rs to 0.7 and vcard-rs to 0.6, whose `Http11SendError`, `IcalParseError` and `VcardParseError` `MsgraphSendError::Send`, `MsgraphEventIcalError::Parse` and `MsgraphContactVcardError::Parse` carry. A Graph response over 64 KiB of head or 256 MiB of body now fails with `MsgraphSendError::Send`, and a vCard line built from Graph is folded at 75 octets. **Breaking.**
 - Raised the minimum supported Rust version from 1.88 to 1.89.
+- Replaced the base64 crate with [base64-codec](https://crates.io/crates/base64-codec) for MIME sends, attachment content and `MsgraphBatchResponse::bytes`.
+
+  It runs on the CPU token the application installs with `simd_cpu::SimdCpu::install_detected`, the portable baseline when none is. `bytes` accepts line breaks, blanks and missing padding, and still refuses any other byte outside the alphabet.
 
 ## [0.6.0] - 2026-10-10
 

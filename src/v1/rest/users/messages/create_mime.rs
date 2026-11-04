@@ -5,9 +5,9 @@
 //!
 //! <https://learn.microsoft.com/en-us/graph/api/user-post-messages>
 
-use alloc::format;
+use alloc::{format, vec::Vec};
 
-use base64::{Engine, engine::general_purpose::STANDARD};
+use base64_codec::codec::Base64Codec;
 use io_http::rfc6750::bearer::HttpAuthBearer;
 use log::{debug, trace};
 use url::Url;
@@ -45,7 +45,9 @@ impl MsgraphMessageCreateMime {
             None => format!("{user}/messages"),
         };
         let url = Url::parse(MSGRAPH_API_BASE)?.join(&path)?;
-        let body = STANDARD.encode(raw).into_bytes();
+        let mut body = Vec::new();
+        Base64Codec::default().encode_vec(raw, &mut body);
+
         let send = MsgraphSend::post_text(auth, url, body);
 
         Ok(Self { send })

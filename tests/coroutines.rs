@@ -138,7 +138,9 @@ fn batch_response_decodes_base64_bodies_and_retry_after() {
             { "id": "3", "status": 200, "body": "not base64!" },
             { "id": "4", "status": 200, "body": { "id": "AAA" } },
             { "id": "5", "status": 429, "headers": { "Retry-After": "7" }, "body": { "error": { "code": "TooManyRequests", "message": "Throttled" } } },
-            { "id": "6", "status": 503, "headers": { "retry-after": "Wed, 21 Oct 2026 07:28:00 GMT" } }
+            { "id": "6", "status": 503, "headers": { "retry-after": "Wed, 21 Oct 2026 07:28:00 GMT" } },
+            { "id": "7", "status": 200, "body": "U3ViamVjdDogSGkNCg0K\r\nSGVsbG8" },
+            { "id": "8", "status": 200, "body": "U3ViamVjdDogSGkNCg0K*SGVsbG8=" }
         ]
     }"#;
 
@@ -165,6 +167,13 @@ fn batch_response_decodes_base64_bodies_and_retry_after() {
     ));
 
     assert_eq!(next().retry_after(), None);
+
+    // NOTE: line breaks and missing padding decode, a stray byte fails
+    assert_eq!(next().bytes().unwrap(), b"Subject: Hi\r\n\r\nHello");
+    assert!(matches!(
+        next().bytes(),
+        Err(MsgraphSendError::ParseResponse(_))
+    ));
 }
 
 #[test]

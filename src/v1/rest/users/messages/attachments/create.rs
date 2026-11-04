@@ -7,9 +7,9 @@
 //!
 //! <https://learn.microsoft.com/en-us/graph/api/message-post-attachments>
 
-use alloc::{format, string::String};
+use alloc::{format, string::String, vec::Vec};
 
-use base64::{Engine, engine::general_purpose::STANDARD};
+use base64_codec::codec::Base64Codec;
 use io_http::rfc6750::bearer::HttpAuthBearer;
 use log::{debug, trace};
 use serde::Serialize;
@@ -63,10 +63,16 @@ impl MsgraphAttachmentCreate {
         let user = user_path(user_id);
         let url = Url::parse(MSGRAPH_API_BASE)?
             .join(&format!("{user}/messages/{message_id}/attachments"))?;
+
+        let mut content_bytes = Vec::new();
+        Base64Codec::default().encode_vec(content, &mut content_bytes);
+        // NOTE: the base64 alphabet is ASCII, so this never falls back.
+        let content_bytes = String::from_utf8(content_bytes).unwrap_or_default();
+
         let body = MsgraphAttachmentCreateRequest {
             odata_type: "#microsoft.graph.fileAttachment",
             name,
-            content_bytes: STANDARD.encode(content),
+            content_bytes,
             content_type,
         };
         let send = MsgraphSend::post_json(auth, url, &body)?;
